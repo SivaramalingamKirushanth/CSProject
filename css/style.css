@@ -28,6 +28,27 @@ body {
   vertical-align: middle;
 }
 
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-header:hover {
+  background-color: rgba(13, 110, 253, 0.04);
+}
+
+.sort-indicator {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.status-badge {
+  min-width: 6.5rem;
+  display: inline-block;
+  text-align: center;
+}
+
 .action-btns .btn {
   margin-right: 0.25rem;
 }

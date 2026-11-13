@@ -9,9 +9,14 @@ HTML, CSS (Bootstrap 5) and JavaScript. All data is stored in the browser's
 - **Login gate** — a basic admin sign-in screen before accessing the records.
 - **Add / Edit / Delete / View** student records.
 - **Search & filter** students by name, roll no, or class.
+- **Smart sorting** on key fields, including a performance column using
+  computed averages.
 - **Grades tracking** — add marks per subject/term for each student and see
   an auto-computed percentage.
+- **Performance overview** with badges such as Excellent, Good, and Needs
+  support to quickly identify students who need attention.
 - **CSV export** of the (optionally filtered) student list.
+- **Backup & restore** via JSON export/import for safer record management.
 - Dashboard summary cards (total students, number of classes, average
   percentage, graded entries).
 

@@ -136,14 +136,29 @@
                   <option value="">All Classes</option>
                 </select>
               </div>
-              <div class="col-md-5 text-md-end">
-                <button class="btn btn-success" id="exportCsvBtn">
-                  <i class="bi bi-download"></i> Export CSV
+              <div class="col-md-5 text-md-end d-flex flex-wrap justify-content-md-end gap-2">
+                <button class="btn btn-outline-secondary" id="backupDataBtn" type="button">
+                  <i class="bi bi-download"></i> Backup
                 </button>
-                <button class="btn btn-primary" id="addStudentBtn">
+                <button class="btn btn-outline-secondary" id="restoreDataBtn" type="button">
+                  <i class="bi bi-upload"></i> Restore
+                </button>
+                <button class="btn btn-outline-warning" id="resetDemoBtn" type="button">
+                  <i class="bi bi-arrow-counterclockwise"></i> Reset Demo
+                </button>
+                <button class="btn btn-success" id="exportCsvBtn" type="button">
+                  <i class="bi bi-filetype-csv"></i> Export CSV
+                </button>
+                <button class="btn btn-primary" id="addStudentBtn" type="button">
                   <i class="bi bi-person-plus-fill"></i> Add Student
                 </button>
               </div>
+              <input
+                id="importDataInput"
+                type="file"
+                accept="application/json"
+                class="d-none"
+              />
             </div>
           </div>
         </div>
@@ -155,11 +170,24 @@
               <table class="table table-hover align-middle">
                 <thead class="table-light">
                   <tr>
-                    <th>Roll No</th>
-                    <th>Name</th>
-                    <th>Class</th>
-                    <th>Email</th>
-                    <th>Phone</th>
+                    <th data-sort-key="rollNo" aria-sort="ascending" class="sortable-header">
+                      <span class="me-1">Roll No</span><span class="sort-indicator">↑</span>
+                    </th>
+                    <th data-sort-key="fullName" aria-sort="none" class="sortable-header">
+                      <span class="me-1">Name</span><span class="sort-indicator">↕</span>
+                    </th>
+                    <th data-sort-key="studentClass" aria-sort="none" class="sortable-header">
+                      <span class="me-1">Class</span><span class="sort-indicator">↕</span>
+                    </th>
+                    <th data-sort-key="email" aria-sort="none" class="sortable-header">
+                      <span class="me-1">Email</span><span class="sort-indicator">↕</span>
+                    </th>
+                    <th data-sort-key="phone" aria-sort="none" class="sortable-header">
+                      <span class="me-1">Phone</span><span class="sort-indicator">↕</span>
+                    </th>
+                    <th data-sort-key="performance" aria-sort="none" class="sortable-header">
+                      <span class="me-1">Performance</span><span class="sort-indicator">↕</span>
+                    </th>
                     <th class="text-end">Actions</th>
                   </tr>
                 </thead>

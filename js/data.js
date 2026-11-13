@@ -19,6 +19,16 @@ const DataStore = {
     return defaultAdmin;
   },
 
+  updateAdmin(admin) {
+    const safeAdmin = {
+      username: String(admin?.username || '').trim(),
+      password: String(admin?.password || '').trim(),
+    };
+    if (!safeAdmin.username || !safeAdmin.password) return null;
+    localStorage.setItem(STORAGE_KEYS.ADMIN, JSON.stringify(safeAdmin));
+    return safeAdmin;
+  },
+
   // ---------- Students ----------
   getStudents() {
     const raw = localStorage.getItem(STORAGE_KEYS.STUDENTS);
@@ -32,9 +42,13 @@ const DataStore = {
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
   },
 
+  createId(prefix = 's') {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  },
+
   addStudent(student) {
     const students = this.getStudents();
-    student.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    student.id = student.id || this.createId('s');
     student.grades = student.grades || [];
     students.push(student);
     this.saveStudents(students);
@@ -70,7 +84,7 @@ const DataStore = {
     const students = this.getStudents();
     const student = students.find((s) => s.id === studentId);
     if (!student) return null;
-    grade.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    grade.id = grade.id || this.createId('g');
     student.grades = student.grades || [];
     student.grades.push(grade);
     this.saveStudents(students);
@@ -83,6 +97,58 @@ const DataStore = {
     if (!student) return;
     student.grades = (student.grades || []).filter((g) => g.id !== gradeId);
     this.saveStudents(students);
+  },
+
+  exportBackup() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      admin: this.getAdmin(),
+      students: this.getStudents(),
+    };
+    return JSON.stringify(payload, null, 2);
+  },
+
+  importBackup(rawData) {
+    if (!rawData || typeof rawData !== 'string') {
+      throw new Error('No backup data found.');
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawData);
+    } catch (error) {
+      throw new Error('The selected file is not valid JSON.');
+    }
+
+    const incomingStudents = Array.isArray(parsed) ? parsed : parsed.students;
+    if (!Array.isArray(incomingStudents)) {
+      throw new Error('The imported file does not contain student records.');
+    }
+
+    const normalizedStudents = incomingStudents.map((student) => ({
+      ...student,
+      id: student.id || this.createId('s'),
+      grades: Array.isArray(student.grades)
+        ? student.grades.map((grade) => ({
+            ...grade,
+            id: grade.id || this.createId('g'),
+          }))
+        : [],
+    }));
+
+    if (parsed.admin && parsed.admin.username && parsed.admin.password) {
+      this.updateAdmin(parsed.admin);
+    }
+
+    this.saveStudents(normalizedStudents);
+    return normalizedStudents;
+  },
+
+  resetDemoData() {
+    const seed = this._seedStudents();
+    this.saveStudents(seed);
+    return seed;
   },
 
   // ---------- Seed demo data ----------

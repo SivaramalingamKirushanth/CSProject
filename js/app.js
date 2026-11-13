@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const classFilter = document.getElementById('classFilter');
   const addStudentBtn = document.getElementById('addStudentBtn');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
+  const backupDataBtn = document.getElementById('backupDataBtn');
+  const restoreDataBtn = document.getElementById('restoreDataBtn');
+  const resetDemoBtn = document.getElementById('resetDemoBtn');
+  const importDataInput = document.getElementById('importDataInput');
   const studentTableBody = document.getElementById('studentTableBody');
   const emptyState = document.getElementById('emptyState');
 
@@ -33,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const gradeAverage = document.getElementById('gradeAverage');
 
   let currentViewStudentId = null;
+  let sortState = { key: 'rollNo', direction: 'asc' };
 
   // ---------------------------------------------------------------
   // Screen toggling
@@ -131,8 +136,63 @@ document.addEventListener('DOMContentLoaded', () => {
     return totalMax ? (totalMarks / totalMax) * 100 : null;
   }
 
+  function getPerformanceStatus(student) {
+    const percentage = computePercentage(student);
+    if (percentage === null) {
+      return { label: 'No grades', className: 'text-bg-secondary' };
+    }
+    if (percentage >= 80) {
+      return { label: 'Excellent', className: 'text-bg-success' };
+    }
+    if (percentage >= 60) {
+      return { label: 'Good', className: 'text-bg-primary' };
+    }
+    return { label: 'Needs support', className: 'text-bg-warning' };
+  }
+
+  function applySortState() {
+    document.querySelectorAll('[data-sort-key]').forEach((header) => {
+      const isActive = header.dataset.sortKey === sortState.key;
+      header.setAttribute('aria-sort', isActive ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+      const icon = header.querySelector('.sort-indicator');
+      if (icon) {
+        icon.textContent = isActive ? (sortState.direction === 'asc' ? '↑' : '↓') : '↕';
+      }
+    });
+  }
+
+  function getSortedStudents(students) {
+    const sorted = [...students];
+    const { key, direction } = sortState;
+    const multiplier = direction === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let valueA;
+      let valueB;
+
+      if (key === 'performance') {
+        valueA = computePercentage(a) ?? -1;
+        valueB = computePercentage(b) ?? -1;
+      } else if (key === 'rollNo') {
+        valueA = String(a.rollNo || '').toLowerCase();
+        valueB = String(b.rollNo || '').toLowerCase();
+        return valueA.localeCompare(valueB, undefined, { numeric: true }) * multiplier;
+      } else {
+        valueA = String(a[key] || '').toLowerCase();
+        valueB = String(b[key] || '').toLowerCase();
+      }
+
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return (valueA - valueB) * multiplier;
+      }
+      return valueA.localeCompare(valueB) * multiplier;
+    });
+
+    return sorted;
+  }
+
   function renderStudents() {
-    const students = getFilteredStudents();
+    const students = getSortedStudents(getFilteredStudents());
     studentTableBody.innerHTML = '';
 
     if (students.length === 0) {
@@ -141,28 +201,30 @@ document.addEventListener('DOMContentLoaded', () => {
       emptyState.classList.add('d-none');
     }
 
-    students
-      .sort((a, b) => a.rollNo.localeCompare(b.rollNo, undefined, { numeric: true }))
-      .forEach((s) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${escapeHtml(s.rollNo)}</td>
-          <td>${escapeHtml(s.fullName)}</td>
-          <td>${escapeHtml(s.studentClass || '')}</td>
-          <td>${escapeHtml(s.email || '')}</td>
-          <td>${escapeHtml(s.phone || '')}</td>
-          <td class="text-end action-btns">
-            <button class="btn btn-sm btn-outline-info" data-action="view" title="View / Grades"><i class="bi bi-eye"></i></button>
-            <button class="btn btn-sm btn-outline-primary" data-action="edit" title="Edit"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger" data-action="delete" title="Delete"><i class="bi bi-trash"></i></button>
-          </td>
-        `;
-        tr.querySelector('[data-action="view"]').addEventListener('click', () => openViewModal(s.id));
-        tr.querySelector('[data-action="edit"]').addEventListener('click', () => openEditModal(s.id));
-        tr.querySelector('[data-action="delete"]').addEventListener('click', () => handleDelete(s.id));
-        studentTableBody.appendChild(tr);
-      });
+    students.forEach((s) => {
+      const status = getPerformanceStatus(s);
+      const pct = computePercentage(s);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(s.rollNo)}</td>
+        <td>${escapeHtml(s.fullName)}</td>
+        <td>${escapeHtml(s.studentClass || '')}</td>
+        <td>${escapeHtml(s.email || '')}</td>
+        <td>${escapeHtml(s.phone || '')}</td>
+        <td><span class="badge status-badge ${status.className}">${status.label}</span>${pct !== null ? `<div class="small text-muted mt-1">${pct.toFixed(1)}%</div>` : ''}</td>
+        <td class="text-end action-btns">
+          <button class="btn btn-sm btn-outline-info" data-action="view" title="View / Grades"><i class="bi bi-eye"></i></button>
+          <button class="btn btn-sm btn-outline-primary" data-action="edit" title="Edit"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" data-action="delete" title="Delete"><i class="bi bi-trash"></i></button>
+        </td>
+      `;
+      tr.querySelector('[data-action="view"]').addEventListener('click', () => openViewModal(s.id));
+      tr.querySelector('[data-action="edit"]').addEventListener('click', () => openEditModal(s.id));
+      tr.querySelector('[data-action="delete"]').addEventListener('click', () => handleDelete(s.id));
+      studentTableBody.appendChild(tr);
+    });
 
+    applySortState();
     renderStats();
   }
 
@@ -197,6 +259,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchInput.addEventListener('input', renderStudents);
   classFilter.addEventListener('change', renderStudents);
+
+  document.querySelectorAll('[data-sort-key]').forEach((header) => {
+    header.addEventListener('click', () => {
+      const nextKey = header.dataset.sortKey;
+      if (sortState.key === nextKey) {
+        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.key = nextKey;
+        sortState.direction = 'asc';
+      }
+      renderStudents();
+    });
+  });
+
+  backupDataBtn.addEventListener('click', () => {
+    const blob = new Blob([DataStore.exportBackup()], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `student_records_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Data backup downloaded.');
+  });
+
+  restoreDataBtn.addEventListener('click', () => importDataInput.click());
+
+  importDataInput.addEventListener('change', async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const importedStudents = DataStore.importBackup(text);
+      refreshClassFilter();
+      renderStudents();
+      showToast(`Imported ${importedStudents.length} students.`);
+    } catch (error) {
+      showToast(error.message || 'Unable to restore data.', 'danger');
+    } finally {
+      importDataInput.value = '';
+    }
+  });
+
+  resetDemoBtn.addEventListener('click', () => {
+    if (!confirm('Reset all student records to the built-in demo data?')) {
+      return;
+    }
+    DataStore.resetDemoData();
+    refreshClassFilter();
+    renderStudents();
+    showToast('Demo data restored.');
+  });
 
   // ---------------------------------------------------------------
   // Add / Edit student
