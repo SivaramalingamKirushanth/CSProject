@@ -334,7 +334,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><button class="btn btn-sm btn-outline-danger" data-action="delete-grade"><i class="bi bi-trash"></i></button></td>
       `;
       tr.querySelector('[data-action="delete-grade"]').addEventListener('click', () => {
+        const gradeLabel = `${g.subject} (${g.term || 'No term'})`;
+        if (!confirm(`Delete grade "${gradeLabel}" for ${student.fullName}?`)) {
+          return;
+        }
         DataStore.deleteGrade(student.id, g.id);
+        showToast('Grade deleted.', 'warning');
         renderViewModal();
         renderStudents();
       });
